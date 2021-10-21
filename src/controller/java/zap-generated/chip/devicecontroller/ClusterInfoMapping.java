@@ -1511,7 +1511,7 @@ public class ClusterInfoMapping {
     }
 
     @Override
-    public void onSuccess(int StatusCode, int FabricIndex, byte[] DebugText) {
+    public void onSuccess(int StatusCode, int FabricIndex, String DebugText) {
       List<Object> responseValues = new ArrayList<>();
       responseValues.add(StatusCode);
       responseValues.add(FabricIndex);
