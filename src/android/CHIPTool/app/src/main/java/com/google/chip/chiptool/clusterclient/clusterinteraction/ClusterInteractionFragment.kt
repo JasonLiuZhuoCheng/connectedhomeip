@@ -9,12 +9,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import chip.devicecontroller.ChipDeviceController
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.chip.chiptool.ChipClient
 import com.google.chip.chiptool.GenericChipDeviceListener
 import com.google.chip.chiptool.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import com.google.chip.chiptool.clusterclient.AddressUpdateFragment
+import kotlinx.android.synthetic.main.cluster_interaction_fragment.view.bottomNavigationBar
 import kotlinx.android.synthetic.main.cluster_interaction_fragment.view.endpointList
 import kotlinx.android.synthetic.main.cluster_interaction_fragment.view.getEndpointListBtn
 import kotlinx.coroutines.launch
@@ -55,6 +57,7 @@ class ClusterInteractionFragment : Fragment() {
       }
       endpointList.adapter = EndpointAdapter(dataList, EndpointListener())
       endpointList.layoutManager = LinearLayoutManager(requireContext())
+      bottomNavigationBar.setOnNavigationItemSelectedListener(bottomNavigationListener)
     }
   }
 
@@ -84,6 +87,22 @@ class ClusterInteractionFragment : Fragment() {
     }
 
     fragmentTransaction.commit()
+  }
+
+  private val bottomNavigationListener = BottomNavigationView.OnNavigationItemSelectedListener { menuItem ->
+    when (menuItem.itemId) {
+      R.id.clusterInteractionHistory -> {
+        val fragment = ClusterInteractionHistoryFragment()
+        showFragment(fragment)
+        return@OnNavigationItemSelectedListener true
+      }
+      R.id.clusterInteractionSettings -> {
+        val fragment = ClusterInteractionSettingsFragment()
+        showFragment(fragment)
+        return@OnNavigationItemSelectedListener true
+      }
+    }
+    false
   }
 
   inner class EndpointListener : EndpointAdapter.OnItemClickListener {
