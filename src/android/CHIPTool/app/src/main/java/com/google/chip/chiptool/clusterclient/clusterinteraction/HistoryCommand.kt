@@ -1,3 +1,18 @@
 package com.google.chip.chiptool.clusterclient.clusterinteraction
 
-data class HistoryCommand (val clusterName: String, val commandName: String, val parameterList: List<String>)
+import chip.clusterinfo.CommandResponseInfo
+
+data class HistoryCommand(
+  val clusterName: String,
+  val commandName: String,
+  val parameterList: MutableList<HistoryParameterInfo>,
+  var responseValue: Map<CommandResponseInfo, Any>?,
+  var status: String?
+  // interactionInfo class should be enough here
+)
+
+data class HistoryParameterInfo(
+  val parameterName: String,
+  val parameterData: String,
+  val parameterType: String
+)

@@ -24,6 +24,7 @@ import chip.devicecontroller.ClusterInfoMapping
 import com.google.chip.chiptool.ChipClient
 import com.google.chip.chiptool.GenericChipDeviceListener
 import com.google.chip.chiptool.R
+import com.google.chip.chiptool.clusterclient.clusterinteraction.ClusterInteractionHistoryFragment.Companion.clusterInteractionHistoryList
 import kotlinx.android.synthetic.main.cluster_callback_item.view.clusterCallbackDataTv
 import kotlinx.android.synthetic.main.cluster_callback_item.view.clusterCallbackNameTv
 import kotlinx.android.synthetic.main.cluster_callback_item.view.clusterCallbackTypeTv
@@ -32,6 +33,8 @@ import kotlinx.android.synthetic.main.cluster_detail_fragment.view.clusterAutoCo
 import kotlinx.android.synthetic.main.cluster_detail_fragment.view.commandAutoCompleteTv
 import kotlinx.android.synthetic.main.cluster_detail_fragment.view.invokeCommand
 import kotlinx.android.synthetic.main.cluster_detail_fragment.view.parameterList
+import kotlinx.android.synthetic.main.cluster_interaction_history_fragment.historyCommandList
+import kotlinx.android.synthetic.main.cluster_interaction_history_item.historyParameterList
 import kotlinx.android.synthetic.main.cluster_parameter_item.view.clusterParameterData
 import kotlinx.android.synthetic.main.cluster_parameter_item.view.clusterParameterNameTv
 import kotlinx.android.synthetic.main.cluster_parameter_item.view.clusterParameterTypeTv
@@ -78,16 +81,34 @@ class ClusterDetailFragment : Fragment() {
       invokeCommand.setOnClickListener {
         callbackList.removeAllViews()
         val commandArguments = HashMap<String, Any>()
+        clusterInteractionHistoryList.addFirst(HistoryCommand(
+          clusterAutoCompleteTv.text.toString(),
+          commandAutoCompleteTv.text.toString(),
+          mutableListOf(),
+          null,
+          null
+          // need to pass list of parameter<String,
+        ))
         parameterList.forEach {
-          val type =
-            selectedInteractionInfo.commandParameters[it.clusterParameterNameTv.text.toString()]!!.type
-          val data = castStringToType(it.clusterParameterData.text.toString(), type)!!
-
+          val parameterName = it.clusterParameterNameTv.text.toString()
+          val castType =
+            selectedInteractionInfo.commandParameters[parameterName]!!.type
+          val data = castStringToType(it.clusterParameterData.text.toString(), castType)!!
+          val parameterType = formatParameterType(castType)
           commandArguments[it.clusterParameterNameTv.text.toString()] = data
+          clusterInteractionHistoryList.get(0).parameterList.add(HistoryParameterInfo(parameterName, data.toString(), parameterType))
         }
         selectedInteractionInfo.getCommandFunction()
           .invokeCommand(selectedCluster, selectedCommandCallback, commandArguments)
       }
+    }
+  }
+
+  private fun formatParameterType(castType: Class<*>): String {
+    return if (castType == ByteArray::class.java) {
+      "Byte[]"
+    } else {
+      castType.toString()
     }
   }
 
@@ -153,35 +174,34 @@ class ClusterDetailFragment : Fragment() {
             populateCallbackResult(
               responseValues,
               inflater,
-              callbackList
+              callbackList,
             )
           }
+          clusterInteractionHistoryList[0].responseValue = responseValues
+          clusterInteractionHistoryList[0].status = "Success"
           responseValues.forEach { Log.d(TAG, it.toString()) }
         }
 
         override fun onFailure(exception: Exception) {
           showMessage("Command failed")
+          clusterInteractionHistoryList[0].status = exception.toString()
           Log.e(TAG, exception.toString())
         }
       })
     }
   }
 
-  private fun populateCommandParameter(inflater: LayoutInflater, parameterList: LinearLayout) {
-    selectedInteractionInfo.commandParameters.forEach { (paramName, paramInfo) ->
-      val param = inflater.inflate(R.layout.cluster_parameter_item, null, false) as ConstraintLayout
-      param.clusterParameterNameTv.text = "${paramName}"
-      // byte[].class will be output as class [B, which is not readable, so dynamically change it
-      // to Byte[]. If more custom logic is required, should add a className field in
-      // commandParameterInfo
-      if (paramInfo.type == ByteArray::class.java) {
-        param.clusterParameterTypeTv.text = "Byte[]"
-      } else {
-        param.clusterParameterTypeTv.text = "${paramInfo.type}"
+    private fun populateCommandParameter(inflater: LayoutInflater, parameterList: LinearLayout) {
+      selectedInteractionInfo.commandParameters.forEach { (paramName, paramInfo) ->
+        val param = inflater.inflate(R.layout.cluster_parameter_item, null, false) as ConstraintLayout
+        param.clusterParameterNameTv.text = "${paramName}"
+        // byte[].class will be output as class [B, which is not readable, so dynamically change it
+        // to Byte[]. If more custom logic is required, should add a className field in
+        // commandParameterInfo
+        param.clusterParameterTypeTv.text = formatParameterType(paramInfo.type)
+        parameterList.addView(param)
       }
-      parameterList.addView(param)
     }
-  }
 
   private fun populateCallbackResult(
     responseValues: Map<CommandResponseInfo, Any>,
@@ -274,8 +294,8 @@ class ClusterDetailFragment : Fragment() {
 
   companion object {
     private const val TAG = "ClusterDetailFragment"
-    private const val ENDPOINT_ID_KEY = "endpoint_id"
-    private const val DEVICE_PTR_KEY = "device_ptr"
+    private const val ENDPOINT_ID_KEY = "endpointId"
+    private const val DEVICE_PTR_KEY = "devicePtr"
 
     fun newInstance(
       deviceId: Long,

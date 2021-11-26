@@ -1,13 +1,21 @@
 package com.google.chip.chiptool.clusterclient.clusterinteraction
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
+import chip.clusterinfo.CommandResponseInfo
 import com.google.chip.chiptool.R
+import kotlinx.android.synthetic.main.cluster_callback_item.view.clusterCallbackDataTv
+import kotlinx.android.synthetic.main.cluster_callback_item.view.clusterCallbackNameTv
+import kotlinx.android.synthetic.main.cluster_callback_item.view.clusterCallbackTypeTv
 import kotlinx.android.synthetic.main.cluster_interaction_history_fragment.view.historyCommandList
 
 /**
@@ -22,12 +30,10 @@ class ClusterInteractionHistoryFragment : Fragment() {
     savedInstanceState: Bundle?
   ): View? {
     // Inflate the layout for this fragment
+    Log.d(TAG, clusterInteractionHistoryList.toString())
     return inflater.inflate(R.layout.cluster_interaction_history_fragment, container, false).apply {
-      var dataList: List<HistoryCommand> = ArrayList()
-      for (i in 0 until 2) {
-        dataList += HistoryCommand("test$i", "test$i", listOf("a", "b", "c"))
-      }
-      historyCommandList.adapter = HistoryCommandAdapter(dataList, HistoryCommandListener())
+      historyCommandList.adapter =
+        HistoryCommandAdapter(clusterInteractionHistoryList, HistoryCommandListener(), inflater)
       historyCommandList.layoutManager = LinearLayoutManager(requireContext())
     }
   }
@@ -41,24 +47,14 @@ class ClusterInteractionHistoryFragment : Fragment() {
      * @param param2 Parameter 2.
      * @return A new instance of fragment ClusterInteractionHistoryFragment.
      */
-    @JvmStatic
+
+    private const val TAG = "ClusterInteractionHistoryFragment"
+    var clusterInteractionHistoryList = ArrayDeque<HistoryCommand>()
     fun newInstance() =
       ClusterInteractionHistoryFragment().apply {
         arguments = Bundle().apply {
         }
       }
-  }
-
-  private fun showFragment(fragment: Fragment, showOnBack: Boolean = true) {
-    val fragmentTransaction = requireActivity().supportFragmentManager
-      .beginTransaction()
-      .replace(R.id.fragment_container, fragment, fragment.javaClass.simpleName)
-
-    if (showOnBack) {
-      fragmentTransaction.addToBackStack(null)
-    }
-
-    fragmentTransaction.commit()
   }
 
   inner class HistoryCommandListener : HistoryCommandAdapter.OnItemClickListener {
